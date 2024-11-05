@@ -22,3 +22,7 @@ The goal is to select as many correct neighboring cities as possible without mak
 
 This game uses **plain JavaScript** to manage the game logic, UI updates, and scoring. 
 Library Leaflet will be used to add more geographical data functionality.
+
+
+<img width="924" alt="Screenshot 2024-11-05 at 23 18 08" src="https://github.com/user-attachments/assets/8877cf9f-3822-4dce-9538-820b724f14fd">
+Prototype will be like this, the map, features and other will be added
