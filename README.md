@@ -18,3 +18,7 @@ The goal is to select as many correct neighboring cities as possible without mak
 - **Neighbor Choices**: Below the current city, there is a list of buttons, each representing a neighboring city. The player selects one of these buttons as their choice.
 - **Score Display**: The player’s current score is shown below the neighbor choices, updating with each correct selection.
 
+## JavaScript Library Used
+
+This game uses **plain JavaScript** to manage the game logic, UI updates, and scoring. 
+Library Leaflet will be used to add more geographical data functionality.
