@@ -1,5 +1,6 @@
 # GeoGame - Neighbor City Game
 https://gmt-458-web-gis.github.io/geogame-Egemen1945
+Mehmet Egemen Ecevit 21833116
 ## Project Objective
 This project is a geographical game where the player is given a city in Turkey and must select one of its neighboring cities.
 The game continues until the player makes an incorrect choice.
