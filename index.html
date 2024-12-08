@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Neighbor City Game</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      color: #212529;
+    }
+    #game-container {
+      max-width: 700px;
+      margin: 50px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      color: #007bff;
+    }
+    #map {
+      height: 400px;
+      margin-top: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .neighbor-button {
+      margin: 10px 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .neighbor-button:hover {
+      background-color: #0056b3;
+    }
+    #restart-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #dc3545;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      display: none;
+    }
+    #restart-btn:hover {
+      background-color: #c82333;
+    }
+    #score {
+      font-size: 1.2rem;
+      margin-top: 20px;
+      color: #28a745;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <h1>Neighbor City Game</h1>
+    <p>Current City: <span id="current-city">-</span></p>
+    <p>Choose a Neighbor:</p>
+    <div id="neighbors-container"></div>
+    <p id="score">Score: 0</p>
+    <button id="restart-btn" onclick="resetGame()">Restart Game</button>
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+
+
+  // Türkiye'deki tüm şehirler, komşuları ve koordinatları
+     const cities = {
+  "Adana": { neighbors: ["Osmaniye", "Mersin", "Hatay"], coords: [37.0, 35.3213] },
+  "Adıyaman": { neighbors: ["Şanlıurfa", "Diyarbakır", "Malatya", "Kahramanmaraş"], coords: [37.7648, 38.2786] },
+  "Afyonkarahisar": { neighbors: ["Uşak", "Kütahya", "Eskişehir", "Konya", "Isparta", "Denizli"], coords: [38.7638, 30.5403] },
+  "Ağrı": { neighbors: ["Iğdır", "Kars", "Muş", "Van", "Erzurum"], coords: [39.7191, 43.0519] },
+  "Aksaray": { neighbors: ["Konya", "Ankara", "Kırşehir", "Niğde", "Nevşehir"], coords: [38.3687, 34.037] },
+  "Amasya": { neighbors: ["Çorum", "Tokat", "Samsun"], coords: [40.6539, 35.833] },
+  "Ankara": { neighbors: ["Kırıkkale", "Eskişehir", "Çankırı", "Kırşehir", "Aksaray"], coords: [39.9334, 32.8597] },
+  "Antalya": { neighbors: ["Isparta", "Burdur", "Mersin"], coords: [36.8969, 30.7133] },
+  "Ardahan": { neighbors: ["Artvin", "Kars"], coords: [41.1105, 42.7022] },
+  "Artvin": { neighbors: ["Rize", "Ardahan"], coords: [41.1828, 41.8183] },
+  "Aydın": { neighbors: ["Muğla", "Denizli", "Izmir"], coords: [37.845, 27.8396] },
+  "Balıkesir": { neighbors: ["Bursa", "Manisa", "Çanakkale"], coords: [39.6484, 27.8826] },
+  "Bartın": { neighbors: ["Karabük", "Zonguldak", "Kastamonu"], coords: [41.6358, 32.3375] },
+  "Batman": { neighbors: ["Diyarbakır", "Mardin", "Siirt"], coords: [37.8812, 41.1351] },
+  "Bayburt": { neighbors: ["Trabzon", "Erzincan", "Gümüşhane"], coords: [40.2567, 40.2249] },
+  "Bilecik": { neighbors: ["Eskişehir", "Bursa", "Sakarya", "Kütahya"], coords: [40.149, 29.9793] },
+  "Bingöl": { neighbors: ["Erzurum", "Muş", "Elazığ", "Tunceli", "Diyarbakır"], coords: [39.0626, 40.7696] },
+  "Bitlis": { neighbors: ["Van", "Muş", "Siirt"], coords: [38.3938, 42.123] },
+  "Bolu": { neighbors: ["Düzce", "Sakarya", "Eskişehir", "Zonguldak", "Karabük", "Çankırı"], coords: [40.735, 31.6069] },
+  "Burdur": { neighbors: ["Antalya", "Isparta", "Denizli"], coords: [37.7203, 30.2909] },
+  "Bursa": { neighbors: ["Balıkesir", "Kocaeli", "Bilecik", "Istanbul"], coords: [40.1828, 29.0665] },
+  "Çanakkale": { neighbors: ["Balıkesir", "Tekirdağ", "Edirne"], coords: [40.1553, 26.4142] },
+  "Çankırı": { neighbors: ["Ankara", "Kırıkkale", "Kastamonu", "Bolu", "Karabük"], coords: [40.6013, 33.6134] },
+  "Çorum": { neighbors: ["Amasya", "Tokat", "Yozgat", "Kırıkkale", "Ankara"], coords: [40.5489, 34.953] },
+  "Denizli": { neighbors: ["Aydın", "Muğla", "Burdur", "Isparta", "Afyonkarahisar"], coords: [37.7765, 29.0864] },
+  "Diyarbakır": { neighbors: ["Batman", "Mardin", "Şanlıurfa", "Elazığ", "Bingöl"], coords: [37.9242, 40.2105] },
+  "Düzce": { neighbors: ["Bolu", "Sakarya", "Zonguldak"], coords: [40.8438, 31.1565] },
+  "Edirne": { neighbors: ["Tekirdağ", "Kırklareli", "Çanakkale"], coords: [41.6771, 26.5557] },
+  "Elazığ": { neighbors: ["Diyarbakır", "Malatya", "Bingöl", "Tunceli"], coords: [38.6753, 39.2203] },
+  "Erzincan": { neighbors: ["Bayburt", "Erzurum", "Tunceli", "Sivas"], coords: [39.7505, 39.4926] },
+  "Erzurum": { neighbors: ["Bayburt", "Artvin", "Kars", "Ağrı", "Bingöl", "Tunceli", "Erzincan"], coords: [39.9043, 41.2679] },
+  "Eskişehir": { neighbors: ["Ankara", "Kütahya", "Afyonkarahisar", "Bilecik"], coords: [39.7667, 30.5256] },
+  "Gaziantep": { neighbors: ["Şanlıurfa", "Adıyaman", "Kahramanmaraş", "Hatay", "Osmaniye", "Kilis"], coords: [37.0662, 37.3833] },
+  "Giresun": { neighbors: ["Ordu", "Sivas", "Trabzon", "Gümüşhane"], coords: [40.917, 38.3874] },
+  "Gümüşhane": { neighbors: ["Trabzon", "Erzincan", "Bayburt", "Giresun"], coords: [40.4607, 39.4814] },
+  "Hakkari": { neighbors: ["Van", "Şırnak"], coords: [37.5833, 43.7333] },
+  "Hatay": { neighbors: ["Adana", "Osmaniye", "Gaziantep"], coords: [36.4018, 36.3498] },
+  "Iğdır": { neighbors: ["Kars", "Ağrı"], coords: [39.9237, 44.045] },
+  "Isparta": { neighbors: ["Burdur", "Antalya", "Afyonkarahisar"], coords: [37.7648, 30.5567] },
+  "Istanbul": { neighbors: ["Kocaeli", "Tekirdağ", "Bursa"], coords: [41.0082, 28.9784] },
+  "Izmir": { neighbors: ["Manisa", "Aydın"], coords: [38.4192, 27.1287] },
+  "Kahramanmaraş": { neighbors: ["Adıyaman", "Gaziantep", "Osmaniye", "Adana", "Malatya"], coords: [37.5833, 36.9371] },
+  "Karabük": { neighbors: ["Zonguldak", "Bolu", "Çankırı", "Kastamonu"], coords: [41.2049, 32.6227] },
+  "Karaman": { neighbors: ["Konya", "Mersin"], coords: [37.1811, 33.215] },
+  "Kars": { neighbors: ["Ardahan", "Artvin", "Ağrı", "Iğdır", "Erzurum"], coords: [40.6026, 43.0976] },
+  "Kastamonu": { neighbors: ["Karabük", "Çankırı", "Bolu", "Bartın"], coords: [41.3887, 33.7827] },
+  "Kayseri": { neighbors: ["Nevşehir", "Sivas", "Yozgat", "Niğde"], coords: [38.7312, 35.4787] },
+  "Kırıkkale": { neighbors: ["Çorum", "Yozgat", "Kırşehir", "Ankara", "Çankırı"], coords: [39.8468, 33.5153] },
+  "Kırklareli": { neighbors: ["Edirne", "Tekirdağ"], coords: [41.7351, 27.2254] },
+  "Kırşehir": { neighbors: ["Kırıkkale", "Nevşehir", "Aksaray", "Ankara", "Yozgat"], coords: [39.1458, 34.1607] },
+  "Kilis": { neighbors: ["Gaziantep", "Şanlıurfa"], coords: [36.7184, 37.1212] },
+  "Kocaeli": { neighbors: ["Istanbul", "Sakarya", "Bursa"], coords: [40.8533, 29.8815] },
+  "Konya": { neighbors: ["Karaman", "Isparta", "Afyonkarahisar", "Aksaray", "Niğde"], coords: [37.8667, 32.4833] },
+  "Kütahya": { neighbors: ["Afyonkarahisar", "Eskişehir", "Bilecik", "Balıkesir"], coords: [39.4242, 29.9833] },
+  "Malatya": { neighbors: ["Elazığ", "Adıyaman", "Sivas", "Kahramanmaraş"], coords: [38.3552, 38.3095] },
+  "Manisa": { neighbors: ["Izmir", "Balıkesir"], coords: [38.612, 27.4265] },
+  "Mardin": { neighbors: ["Diyarbakır", "Şırnak", "Batman"], coords: [37.3122, 40.735] },
+  "Mersin": { neighbors: ["Adana", "Antalya", "Karaman"], coords: [36.8121, 34.6415] },
+  "Muğla": { neighbors: ["Aydın", "Denizli"], coords: [37.2153, 28.3636] },
+  "Muş": { neighbors: ["Ağrı", "Van", "Bitlis", "Bingöl"], coords: [38.9462, 41.7539] },
+  "Nevşehir": { neighbors: ["Kayseri", "Niğde", "Kırşehir"], coords: [38.6244, 34.7239] },
+  "Niğde": { neighbors: ["Nevşehir", "Kayseri", "Aksaray", "Konya"], coords: [37.9704, 34.6835] },
+  "Ordu": { neighbors: ["Giresun", "Samsun"], coords: [40.9846, 37.8788] },
+  "Osmaniye": { neighbors: ["Gaziantep", "Adana", "Hatay"], coords: [37.0742, 36.2476] },
+  "Rize": { neighbors: ["Artvin", "Trabzon"], coords: [41.0201, 40.5234] },
+  "Sakarya": { neighbors: ["Kocaeli", "Bilecik", "Düzce"], coords: [40.7731, 30.3983] },
+  "Samsun": { neighbors: ["Ordu", "Amasya", "Çorum"], coords: [41.2867, 36.33] },
+  "Siirt": { neighbors: ["Batman", "Şırnak", "Bitlis"], coords: [37.9325, 41.9403] },
+  "Sinop": { neighbors: ["Kastamonu", "Samsun"], coords: [42.0288, 35.1508] },
+  "Sivas": { neighbors: ["Kayseri", "Malatya", "Tokat", "Erzincan"], coords: [39.7477, 37.0179] },
+  "Şanlıurfa": { neighbors: ["Diyarbakır", "Adıyaman", "Gaziantep"], coords: [37.1674, 38.7955] },
+  "Şırnak": { neighbors: ["Hakkari", "Van", "Mardin", "Batman"], coords: [37.4187, 42.4918] },
+  "Tekirdağ": { neighbors: ["Istanbul", "Edirne", "Kırklareli"], coords: [40.9785, 27.5139] },
+  "Tokat": { neighbors: ["Amasya", "Sivas", "Çorum"], coords: [40.3162, 36.5544] },
+  "Trabzon": { neighbors: ["Rize", "Giresun", "Gümüşhane"], coords: [41.0015, 39.7178] },
+  "Tunceli": { neighbors: ["Elazığ", "Erzincan", "Bingöl"], coords: [39.1065, 39.5484] },
+  "Uşak": { neighbors: ["Afyonkarahisar", "Kütahya"], coords: [38.678, 29.407] },
+  "Van": { neighbors: ["Hakkari", "Ağrı", "Bitlis"], coords: [38.4891, 43.4089] },
+  "Yalova": { neighbors: ["Istanbul", "Kocaeli", "Bursa"], coords: [40.6508, 29.2769] },
+  "Yozgat": { neighbors: ["Kırşehir", "Nevşehir", "Kayseri", "Kırıkkale"], coords: [39.82, 34.8147] },
+  "Zonguldak": { neighbors: ["Karabük", "Bolu", "Düzce"], coords: [41.4564, 31.7987] }
+  };
+  
+    let currentCity = getRandomCity();
+    let score = 0;
+    let map;
+    let marker;
+
+    function initializeMap(coords) {
+      if (!map) {
+        map = L.map("map").setView(coords, 7);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+        }).addTo(map);
+      }
+      if (marker) {
+        map.removeLayer(marker);
+      }
+      marker = L.marker(coords).addTo(map).bindPopup(`Current City: ${currentCity}`).openPopup();
+      map.setView(coords, 7);
+    }
+
+    function getRandomCity() {
+      const cityNames = Object.keys(cities);
+      return cityNames[Math.floor(Math.random() * cityNames.length)];
+    }
+
+    function loadGame() {
+      document.getElementById("current-city").innerText = currentCity;
+      const neighbors = cities[currentCity].neighbors;
+      const neighborsContainer = document.getElementById("neighbors-container");
+      neighborsContainer.innerHTML = "";
+
+      neighbors.forEach(neighbor => {
+        const button = document.createElement("button");
+        button.innerText = neighbor;
+        button.className = "neighbor-button";
+        button.addEventListener("click", () => handleNeighborClick(neighbor, true));
+        neighborsContainer.appendChild(button);
+      });
+
+      const incorrectCity = getIncorrectCity(neighbors);
+      const incorrectButton = document.createElement("button");
+      incorrectButton.innerText = incorrectCity;
+      incorrectButton.className = "neighbor-button";
+      incorrectButton.addEventListener("click", () => handleNeighborClick(incorrectCity, false));
+      neighborsContainer.appendChild(incorrectButton);
+
+      initializeMap(cities[currentCity].coords);
+    }
+
+    function getIncorrectCity(correctNeighbors) {
+      const allCities = Object.keys(cities);
+      let incorrectCity;
+      do {
+        incorrectCity = allCities[Math.floor(Math.random() * allCities.length)];
+      } while (correctNeighbors.includes(incorrectCity) || incorrectCity === currentCity);
+      return incorrectCity;
+    }
+
+    function handleNeighborClick(selectedCity, isCorrect) {
+      if (isCorrect) {
+        score++;
+        document.getElementById("score").innerText = "Score: " + score;
+        currentCity = getRandomCity();
+        loadGame();
+      } else {
+        endGame();
+      }
+    }
+
+    function endGame() {
+      alert(`Game Over! Final Score: ${score}`);
+      score = 0;
+      document.getElementById("score").innerText = "Score: 0";
+      document.getElementById("neighbors-container").innerHTML = "";
+      document.getElementById("restart-btn").style.display = "block";
+    }
+
+    function resetGame() {
+      score = 0;
+      document.getElementById("score").innerText = "Score: 0";
+      currentCity = getRandomCity();
+      document.getElementById("restart-btn").style.display = "none";
+      loadGame();
+    }
+
+    loadGame();
+  </script>
+</body>
+</html>
